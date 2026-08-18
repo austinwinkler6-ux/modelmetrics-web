@@ -1,0 +1,14 @@
+{
+  "name": "modelmetrics-web",
+  "compatibility_date": "2026-01-01",
+  "main": "worker.js",
+  "assets": {
+    "directory": "./out",
+    "binding": "ASSETS"
+  },
+  "vars": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://kuobzhcdftpeuinetsvy.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_vsC7tj08D5he4GdtrMzwWg_CyLR33mf",
+    "BRIDGE_API_URL": "https://api-bridge-production-2007.up.railway.app"
+  }
+}
