@@ -91,15 +91,45 @@ function fmtOdds(o: number | null | undefined) {
   return o > 0 ? `+${o}` : `${o}`;
 }
 
-function OddsComparisonDropdown({ bookOdds, direction }: {
+function OddsComparisonDropdown({ bookOdds, direction, oddsApiEventId, oddsApiSport, oddsApiMarket }: {
   bookOdds?: Array<{ book: string; line: number | null; over: number | null; under: number | null }>;
   direction?: string;
+  oddsApiEventId?: string | null;
+  oddsApiSport?: string | null;
+  oddsApiMarket?: string | null;
 }) {
   const [open, setOpen] = useState(false);
-  if (!bookOdds || bookOdds.length === 0) return null;
+  const [liveOdds, setLiveOdds] = useState<Array<{ book: string; line: number | null; over: number | null; under: number | null }> | null>(null);
+  const [liveLoading, setLiveLoading] = useState(false);
+  const [liveFetchedAt, setLiveFetchedAt] = useState<string | null>(null);
+  const [liveFailed, setLiveFailed] = useState(false);
+
+  const canFetchLive = !!(oddsApiEventId && oddsApiSport && oddsApiMarket);
+  const displayOdds = liveOdds || bookOdds;
+
+  useEffect(() => {
+    if (!open || !canFetchLive || liveOdds || liveLoading) return;
+    setLiveLoading(true);
+    setLiveFailed(false);
+    fetch(`/api/live-odds?event_id=${encodeURIComponent(oddsApiEventId!)}&sport=${encodeURIComponent(oddsApiSport!)}&market=${encodeURIComponent(oddsApiMarket!)}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.book_odds && json.book_odds.length > 0) {
+          setLiveOdds(json.book_odds);
+          setLiveFetchedAt(json.fetched_at || null);
+        } else {
+          setLiveFailed(true);
+        }
+      })
+      .catch(() => setLiveFailed(true))
+      .finally(() => setLiveLoading(false));
+  }, [open, canFetchLive, oddsApiEventId, oddsApiSport, oddsApiMarket, liveOdds, liveLoading]);
+
+  if ((!bookOdds || bookOdds.length === 0) && !canFetchLive) return null;
 
   const isOver = direction === "over" || direction === "Over";
-  const bestOdds = bookOdds.reduce((best, b) => {
+  const odds = displayOdds || [];
+  const bestOdds = odds.length > 0 ? odds.reduce((best, b) => {
     const val = isOver ? b.over : b.under;
     const bestVal = isOver ? best.over : best.under;
     if (val == null) return best;
@@ -108,42 +138,60 @@ function OddsComparisonDropdown({ bookOdds, direction }: {
     if (val < 0 && bestVal < 0) return val > bestVal ? b : best;
     if (val > 0) return b;
     return best;
-  }, bookOdds[0]);
+  }, odds[0]) : null;
   const bestBookName = bestOdds?.book;
 
+  const labelCount = odds.length || (bookOdds?.length ?? 0);
+  const labelSuffix = liveOdds ? " · Live" : canFetchLive ? "" : "";
+
   return (
-    <ExpandableSection label={`📊 Compare odds (${bookOdds.length} books)`} open={open} onToggle={() => setOpen(!open)}>
-      <div className="overflow-x-auto -mx-1">
-        <table className="w-full text-[11px] font-mono">
-          <thead>
-            <tr className="text-mm-text-faint border-b border-mm-border/40">
-              <th className="text-left py-1.5 px-1.5 font-medium">Book</th>
-              <th className="text-center py-1.5 px-1.5 font-medium">Line</th>
-              <th className="text-center py-1.5 px-1.5 font-medium">Over</th>
-              <th className="text-center py-1.5 px-1.5 font-medium">Under</th>
-            </tr>
-          </thead>
-          <tbody>
-            {bookOdds.map((b, i) => {
-              const isBest = b.book === bestBookName;
-              return (
-                <tr key={i} className={`border-b border-mm-border/20 ${isBest ? "bg-mm-accent/5" : ""}`}>
-                  <td className={`py-1.5 px-1.5 text-left ${isBest ? "text-mm-accent font-semibold" : "text-mm-text-dim"}`}>
-                    {b.book}{isBest && " ✓"}
-                  </td>
-                  <td className="py-1.5 px-1.5 text-center text-mm-text">{b.line ?? "—"}</td>
-                  <td className={`py-1.5 px-1.5 text-center ${isOver && isBest ? "text-mm-accent font-semibold" : "text-mm-text-dim"}`}>
-                    {fmtOdds(b.over)}
-                  </td>
-                  <td className={`py-1.5 px-1.5 text-center ${!isOver && isBest ? "text-mm-accent font-semibold" : "text-mm-text-dim"}`}>
-                    {fmtOdds(b.under)}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+    <ExpandableSection label={`📊 Compare odds${labelCount ? ` (${labelCount} books${labelSuffix})` : ""}`} open={open} onToggle={() => setOpen(!open)}>
+      {liveLoading && (
+        <div className="text-[11px] text-mm-text-faint py-2">Fetching live odds...</div>
+      )}
+      {liveFailed && !liveOdds && bookOdds && bookOdds.length > 0 && (
+        <div className="text-[10px] text-mm-text-faint pb-1">Could not fetch live odds — showing cached</div>
+      )}
+      {odds.length > 0 ? (
+        <div className="overflow-x-auto -mx-1">
+          <table className="w-full text-[11px] font-mono">
+            <thead>
+              <tr className="text-mm-text-faint border-b border-mm-border/40">
+                <th className="text-left py-1.5 px-1.5 font-medium">Book</th>
+                <th className="text-center py-1.5 px-1.5 font-medium">Line</th>
+                <th className="text-center py-1.5 px-1.5 font-medium">Over</th>
+                <th className="text-center py-1.5 px-1.5 font-medium">Under</th>
+              </tr>
+            </thead>
+            <tbody>
+              {odds.map((b, i) => {
+                const isBest = b.book === bestBookName;
+                return (
+                  <tr key={i} className={`border-b border-mm-border/20 ${isBest ? "bg-mm-accent/5" : ""}`}>
+                    <td className={`py-1.5 px-1.5 text-left ${isBest ? "text-mm-accent font-semibold" : "text-mm-text-dim"}`}>
+                      {b.book}{isBest && " ✓"}
+                    </td>
+                    <td className="py-1.5 px-1.5 text-center text-mm-text">{b.line ?? "—"}</td>
+                    <td className={`py-1.5 px-1.5 text-center ${isOver && isBest ? "text-mm-accent font-semibold" : "text-mm-text-dim"}`}>
+                      {fmtOdds(b.over)}
+                    </td>
+                    <td className={`py-1.5 px-1.5 text-center ${!isOver && isBest ? "text-mm-accent font-semibold" : "text-mm-text-dim"}`}>
+                      {fmtOdds(b.under)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {liveFetchedAt && (
+            <div className="text-[10px] text-mm-text-faint mt-1.5 text-right">
+              Updated {new Date(liveFetchedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZoneName: "short" })}
+            </div>
+          )}
+        </div>
+      ) : !liveLoading ? (
+        <div className="text-[11px] text-mm-text-faint py-2">No odds data available</div>
+      ) : null}
     </ExpandableSection>
   );
 }
@@ -228,7 +276,13 @@ export function PropCard({ pick, sportLabel, alreadyBet }: { pick: PlayerPropPic
       </div>
 
       <RecommendedStakeLine pick={pick} />
-      <OddsComparisonDropdown bookOdds={(pick as any).book_odds} direction={pick.over_under ?? undefined} />
+      <OddsComparisonDropdown
+        bookOdds={(pick as any).book_odds}
+        direction={pick.over_under ?? undefined}
+        oddsApiEventId={(pick as any).odds_api_event_id}
+        oddsApiSport={(pick as any).odds_api_sport}
+        oddsApiMarket={(pick as any).odds_api_market}
+      />
       <WhyThisBetSection pick={pick} />
 
       <div className="mt-3">
