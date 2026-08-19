@@ -91,12 +91,13 @@ function fmtOdds(o: number | null | undefined) {
   return o > 0 ? `+${o}` : `${o}`;
 }
 
-function OddsComparisonDropdown({ bookOdds, direction, oddsApiEventId, oddsApiSport, oddsApiMarket }: {
+function OddsComparisonDropdown({ bookOdds, direction, oddsApiEventId, oddsApiSport, oddsApiMarket, playerName }: {
   bookOdds?: Array<{ book: string; line: number | null; over: number | null; under: number | null }>;
   direction?: string;
   oddsApiEventId?: string | null;
   oddsApiSport?: string | null;
   oddsApiMarket?: string | null;
+  playerName?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [liveOdds, setLiveOdds] = useState<Array<{ book: string; line: number | null; over: number | null; under: number | null }> | null>(null);
@@ -105,13 +106,17 @@ function OddsComparisonDropdown({ bookOdds, direction, oddsApiEventId, oddsApiSp
   const [liveFailed, setLiveFailed] = useState(false);
 
   const canFetchLive = !!(oddsApiEventId && oddsApiSport && oddsApiMarket);
-  const displayOdds = liveOdds || bookOdds;
 
   useEffect(() => {
-    if (!open || !canFetchLive || liveOdds || liveLoading) return;
+    if (!open || !canFetchLive || liveOdds || liveLoading || liveFailed) return;
     setLiveLoading(true);
-    setLiveFailed(false);
-    fetch(`/api/live-odds?event_id=${encodeURIComponent(oddsApiEventId!)}&sport=${encodeURIComponent(oddsApiSport!)}&market=${encodeURIComponent(oddsApiMarket!)}`)
+    const params = new URLSearchParams({
+      event_id: oddsApiEventId!,
+      sport: oddsApiSport!,
+      market: oddsApiMarket!,
+    });
+    if (playerName) params.set("player", playerName);
+    fetch(`/api/live-odds?${params.toString()}`)
       .then((res) => res.json())
       .then((json) => {
         if (json.book_odds && json.book_odds.length > 0) {
@@ -123,12 +128,13 @@ function OddsComparisonDropdown({ bookOdds, direction, oddsApiEventId, oddsApiSp
       })
       .catch(() => setLiveFailed(true))
       .finally(() => setLiveLoading(false));
-  }, [open, canFetchLive, oddsApiEventId, oddsApiSport, oddsApiMarket, liveOdds, liveLoading]);
+  }, [open, canFetchLive, oddsApiEventId, oddsApiSport, oddsApiMarket, playerName, liveOdds, liveLoading, liveFailed]);
 
   if ((!bookOdds || bookOdds.length === 0) && !canFetchLive) return null;
 
+  // Show live data if we have it, otherwise cached — but NOT cached while live is loading
+  const odds = liveOdds || (liveLoading ? [] : (bookOdds || []));
   const isOver = direction === "over" || direction === "Over";
-  const odds = displayOdds || [];
   const bestOdds = odds.length > 0 ? odds.reduce((best, b) => {
     const val = isOver ? b.over : b.under;
     const bestVal = isOver ? best.over : best.under;
@@ -282,6 +288,7 @@ export function PropCard({ pick, sportLabel, alreadyBet }: { pick: PlayerPropPic
         oddsApiEventId={(pick as any).odds_api_event_id}
         oddsApiSport={(pick as any).odds_api_sport}
         oddsApiMarket={(pick as any).odds_api_market}
+        playerName={pick.player}
       />
       <WhyThisBetSection pick={pick} />
 
