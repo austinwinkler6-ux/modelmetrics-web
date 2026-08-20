@@ -372,6 +372,7 @@ export default function Home() {
 
     for (const [sportKey, picks] of Object.entries(data.sports)) {
       if (sportKey === "lol") continue; // Play of the Day excludes esports
+      if (sportKey !== "mlb-strikeouts") continue; // MLB only for now
       for (const pick of picks) {
         // Tier priority: Best Bet > Worth a Look > Lean
         const tierScore = pick.mm_tier === "🟢 Best Bet" ? 100 : pick.mm_tier === "🟡 Worth a Look" ? 50 : 0;
