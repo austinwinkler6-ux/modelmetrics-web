@@ -573,18 +573,6 @@ export default function Home() {
         <div className="text-center text-mm-text-dim font-mono text-sm">Loading today&apos;s picks...</div>
       )}
 
-      {data && (
-        <div className="text-center text-mm-text-faint font-mono text-xs mt-4 mb-16">
-          {data.total_count} total picks across all sports · updated {new Date(data.time).toLocaleTimeString()}
-          <div className="mt-2">
-            <Link href="/mlb-strikeouts" className="text-mm-accent hover:underline mx-2">MLB</Link>
-            <Link href="/nba-points" className="text-mm-accent hover:underline mx-2">NBA</Link>
-            <Link href="/nfl-attempts" className="text-mm-accent hover:underline mx-2">NFL</Link>
-            <Link href="/lol" className="text-mm-accent hover:underline mx-2">LoL</Link>
-          </div>
-        </div>
-      )}
-
       {/* How it works + About — below picks for logged-in users */}
       <HowItWorks />
       <AboutSection />
