@@ -371,6 +371,7 @@ export default function Home() {
     let bestScore = -Infinity;
 
     for (const [sportKey, picks] of Object.entries(data.sports)) {
+      if (sportKey === "lol") continue; // Play of the Day excludes esports
       for (const pick of picks) {
         // Tier priority: Best Bet > Worth a Look > Lean
         const tierScore = pick.mm_tier === "🟢 Best Bet" ? 100 : pick.mm_tier === "🟡 Worth a Look" ? 50 : 0;
@@ -572,33 +573,15 @@ export default function Home() {
         <div className="text-center text-mm-text-dim font-mono text-sm">Loading today&apos;s picks...</div>
       )}
 
-      {/* All picks by sport */}
-      {data &&
-        Object.entries(data.sports).map(([sportKey, picks]) => {
-          if (!picks || picks.length === 0) return null;
-          return (
-            <section key={sportKey} className="mb-10">
-              <div className="flex justify-between items-baseline mb-4">
-                <h2 className="font-display text-lg font-semibold text-mm-text">
-                  {SPORT_LABELS[sportKey] || sportKey}
-                  <span className="ml-2 text-xs font-mono text-mm-text-faint align-middle">{picks.length}</span>
-                </h2>
-                <Link href={`/${sportKey}`} className="text-xs font-mono text-mm-text-faint hover:text-mm-accent">
-                  View all →
-                </Link>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {sportKey === "lol"
-                  ? (picks as LolPick[]).map((p, i) => <LolCard key={i} pick={p} alreadyBet={isAlreadyBet(p)} />)
-                  : (picks as PlayerPropPick[]).map((p, i) => <PropCard key={i} pick={p} sportLabel={SPORT_BET_CODES[sportKey] || "MLB"} alreadyBet={isAlreadyBet(p)} />)}
-              </div>
-            </section>
-          );
-        })}
-
       {data && (
-        <div className="text-center text-mm-text-faint font-mono text-xs mt-12 mb-16">
-          {data.total_count} total picks · updated {new Date(data.time).toLocaleTimeString()}
+        <div className="text-center text-mm-text-faint font-mono text-xs mt-4 mb-16">
+          {data.total_count} total picks across all sports · updated {new Date(data.time).toLocaleTimeString()}
+          <div className="mt-2">
+            <Link href="/mlb-strikeouts" className="text-mm-accent hover:underline mx-2">MLB</Link>
+            <Link href="/nba-points" className="text-mm-accent hover:underline mx-2">NBA</Link>
+            <Link href="/nfl-attempts" className="text-mm-accent hover:underline mx-2">NFL</Link>
+            <Link href="/lol" className="text-mm-accent hover:underline mx-2">LoL</Link>
+          </div>
         </div>
       )}
 
