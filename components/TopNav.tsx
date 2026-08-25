@@ -13,6 +13,7 @@ const NAV_LABELS: Record<string, string> = {
   "nfl-attempts": "NFL Attempts",
   "nfl-completions": "NFL Completions",
   "nfl-receptions": "NFL Receptions",
+  "nfl-td": "NFL TD",
   lol: "LoL",
 };
 
@@ -58,6 +59,7 @@ export default function TopNav() {
             </Link>
           ))}
           <div className="w-px h-4 bg-mm-border mx-1" />
+          <Link href="/top-picks" className={linkClass("/top-picks")}>Top Picks</Link>
           <Link href="/bets" className={linkClass("/bets")}>Bet Tracker</Link>
           <Link href="/settings" className={linkClass("/settings")}>Settings</Link>
         </div>
