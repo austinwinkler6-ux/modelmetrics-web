@@ -5,6 +5,7 @@ export const SPORT_LABELS: Record<string, string> = {
   "nfl-attempts": "🏈 NFL Pass Attempts",
   "nfl-completions": "🏈 NFL Pass Completions",
   "nfl-receptions": "🏈 NFL Receptions",
+  "nfl-td": "🏈 NFL Touchdowns",
   lol: "🎮 Esports (LoL)",
 };
 
@@ -19,6 +20,7 @@ export const SPORT_BET_CODES: Record<string, string> = {
   "nfl-attempts": "NFL",
   "nfl-completions": "NFL_COMPLETIONS",
   "nfl-receptions": "NFL_RECEPTIONS",
+  "nfl-td": "NFL_TD",
   lol: "LOL",
 };
 
