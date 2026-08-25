@@ -13,7 +13,6 @@ const NAV_LABELS: Record<string, string> = {
   "nfl-attempts": "NFL Attempts",
   "nfl-completions": "NFL Completions",
   "nfl-receptions": "NFL Receptions",
-  "nfl-td": "NFL TD",
   lol: "LoL",
 };
 
