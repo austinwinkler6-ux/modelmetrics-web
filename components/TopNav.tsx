@@ -10,11 +10,7 @@ const NAV_LABELS: Record<string, string> = {
   mlb: "MLB Strikeouts",
   "nba-points": "NBA Points",
   "nba-assists": "NBA Assists",
-  "nfl-attempts": "NFL Attempts",
-  "nfl-completions": "NFL Completions",
-  "nfl-receptions": "NFL Receptions",
   "nfl-td": "NFL TD",
-  lol: "LoL",
 };
 
 export default function TopNav() {
