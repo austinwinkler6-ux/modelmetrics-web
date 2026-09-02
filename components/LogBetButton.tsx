@@ -103,7 +103,12 @@ export default function LogBetButton({ pick, sportLabel, alreadyBet }: { pick: P
       body: JSON.stringify(payload),
     })
       .then((res) => res.json())
-      .then(() => {
+      .then((json) => {
+        if (json && json.success === false) {
+          setError(json.error || "Failed to log bet — please try again.");
+          setSubmitting(false);
+          return;
+        }
         setLogged(true);
         setSubmitting(false);
         setOpen(false);
