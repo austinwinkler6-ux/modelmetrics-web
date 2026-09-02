@@ -206,6 +206,70 @@ function WhyThisBetSection({ pick }: { pick: PlayerPropPick }) {
   return <WhyLinesDropdown whyLines={pick.why_lines} />;
 }
 
+function BestLineBadge({ bestBook, altBookLines }: {
+  bestBook?: string | null;
+  altBookLines?: Array<{ book: string; line: number; direction: string; odds: number; ev_pct: number; tier: string }>;
+}) {
+  if (!bestBook) return null;
+  const others = (altBookLines || []).filter((b) => b.book !== bestBook);
+  return (
+    <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+      <span className="text-[11px] text-mm-text-faint">📍 Best line at</span>
+      <span className="text-[11px] font-mono font-semibold text-mm-accent px-1.5 py-0.5 rounded bg-mm-accent/10 border border-mm-accent/20">
+        {bestBook}
+      </span>
+      {others.length > 0 && (
+        <span className="text-[10px] text-mm-text-faint">
+          ({others.length} other book{others.length === 1 ? "" : "s"} checked)
+        </span>
+      )}
+    </div>
+  );
+}
+
+function AltBookLinesDropdown({ bestBook, altBookLines }: {
+  bestBook?: string | null;
+  altBookLines?: Array<{ book: string; line: number; direction: string; odds: number; ev_pct: number; tier: string }>;
+}) {
+  const [open, setOpen] = useState(false);
+  const others = (altBookLines || []).filter((b) => b.book !== bestBook);
+  if (others.length === 0) return null;
+  // Real EV-ranked comparison — this is what the model actually
+  // evaluated (line + odds together) when picking the best book,
+  // not just a raw odds comparison at a single fixed line.
+  const sorted = [...others].sort((a, b) => b.ev_pct - a.ev_pct);
+  return (
+    <ExpandableSection label={`📈 Other lines this was checked against (${others.length})`} open={open} onToggle={() => setOpen(!open)}>
+      <div className="overflow-x-auto -mx-1">
+        <table className="w-full text-[11px] font-mono">
+          <thead>
+            <tr className="text-mm-text-faint border-b border-mm-border/40">
+              <th className="text-left py-1.5 px-1.5 font-medium">Book</th>
+              <th className="text-center py-1.5 px-1.5 font-medium">Line</th>
+              <th className="text-center py-1.5 px-1.5 font-medium">Odds</th>
+              <th className="text-right py-1.5 px-1.5 font-medium">EV%</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((b, i) => (
+              <tr key={i} className="border-b border-mm-border/20">
+                <td className="py-1.5 px-1.5 text-left text-mm-text-dim">{b.book}</td>
+                <td className="py-1.5 px-1.5 text-center text-mm-text">
+                  {b.direction === "over" ? "O" : "U"} {b.line}
+                </td>
+                <td className="py-1.5 px-1.5 text-center text-mm-text-dim">{fmtOdds(b.odds)}</td>
+                <td className={`py-1.5 px-1.5 text-right font-semibold ${b.ev_pct > 0 ? "text-green-400" : "text-red-400"}`}>
+                  {b.ev_pct > 0 ? "+" : ""}{b.ev_pct}%
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </ExpandableSection>
+  );
+}
+
 function RecommendedStakeLine({ pick }: { pick: PlayerPropPick }) {
   const { session } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -241,6 +305,11 @@ function RecommendedStakeLine({ pick }: { pick: PlayerPropPick }) {
 }
 
 export function PropCard({ pick, sportLabel, alreadyBet }: { pick: PlayerPropPick; sportLabel: string; alreadyBet?: boolean }) {
+  const bestBook = (pick as any).best_book as string | undefined;
+  const altBookLines = (pick as any).alt_book_lines as
+    | Array<{ book: string; line: number; direction: string; odds: number; ev_pct: number; tier: string }>
+    | undefined;
+
   return (
     <div className="rounded-xl bg-mm-panel border border-mm-border hover:border-mm-border-bright transition-all p-4 sm:p-5">
       {/* Header */}
@@ -281,7 +350,10 @@ export function PropCard({ pick, sportLabel, alreadyBet }: { pick: PlayerPropPic
         )}
       </div>
 
+      <BestLineBadge bestBook={bestBook} altBookLines={altBookLines} />
+
       <RecommendedStakeLine pick={pick} />
+      <AltBookLinesDropdown bestBook={bestBook} altBookLines={altBookLines} />
       <OddsComparisonDropdown
         bookOdds={(pick as any).book_odds}
         direction={pick.over_under ?? undefined}
