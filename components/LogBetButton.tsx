@@ -147,22 +147,31 @@ export default function LogBetButton({ pick, sportLabel, alreadyBet }: { pick: P
           ) : stake?.stake_dollars ? (
             <div className="text-mm-accent mb-1">Suggested: ${stake.stake_dollars.toFixed(2)}</div>
           ) : null}
-          <div className="flex gap-2">
-            <input
-              type="number" step="0.01" placeholder="$ amount" value={betAmount}
-              onChange={(e) => setBetAmount(e.target.value)}
-              className="w-20 px-2 py-1 rounded bg-mm-panel border border-mm-border text-mm-text"
-            />
-            <input
-              type="number" step="0.5" placeholder="line" value={betLine}
-              onChange={(e) => setBetLine(e.target.value)}
-              className="w-16 px-2 py-1 rounded bg-mm-panel border border-mm-border text-mm-text"
-            />
-            <input
-              type="number" step="1" placeholder="odds" value={betOdds}
-              onChange={(e) => setBetOdds(e.target.value)}
-              className="w-20 px-2 py-1 rounded bg-mm-panel border border-mm-border text-mm-text"
-            />
+          <div className="flex gap-2 items-end">
+            <div className="flex flex-col gap-0.5">
+              <label className="text-[9px] text-mm-text-faint uppercase tracking-wide">Amount</label>
+              <input
+                type="number" step="0.01" placeholder="$ amount" value={betAmount}
+                onChange={(e) => setBetAmount(e.target.value)}
+                className="w-20 px-2 py-1 rounded bg-mm-panel border border-mm-border text-mm-text"
+              />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <label className="text-[9px] text-mm-text-faint uppercase tracking-wide">Line</label>
+              <input
+                type="number" step="0.5" placeholder="line" value={betLine}
+                onChange={(e) => setBetLine(e.target.value)}
+                className="w-16 px-2 py-1 rounded bg-mm-panel border border-mm-border text-mm-text"
+              />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <label className="text-[9px] text-mm-text-faint uppercase tracking-wide">Odds</label>
+              <input
+                type="number" step="1" placeholder="odds" value={betOdds}
+                onChange={(e) => setBetOdds(e.target.value)}
+                className="w-20 px-2 py-1 rounded bg-mm-panel border border-mm-border text-mm-text"
+              />
+            </div>
             <button
               onClick={submitBet}
               disabled={submitting || !betAmount || !betOdds}
