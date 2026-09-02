@@ -12,6 +12,7 @@ export default function LogBetButton({ pick, sportLabel, alreadyBet }: { pick: P
   const [stake, setStake] = useState<MmStakeResult | null>(null);
   const [betAmount, setBetAmount] = useState("");
   const [betOdds, setBetOdds] = useState("");
+  const [betLine, setBetLine] = useState("");
   const [logged, setLogged] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +31,10 @@ export default function LogBetButton({ pick, sportLabel, alreadyBet }: { pick: P
     setOpen(true);
     if (odds != null && !betOdds) {
       setBetOdds(String(odds));
+    }
+    if (!isLol && !betLine) {
+      const pickLine = (pick as PlayerPropPick).line;
+      if (pickLine != null) setBetLine(String(pickLine));
     }
     if (!isLol && !stake) {
       // Real, deliberate choice — only real player-prop picks have a
@@ -80,6 +85,7 @@ export default function LogBetButton({ pick, sportLabel, alreadyBet }: { pick: P
           over_under: (pick as PlayerPropPick).over_under,
           odds: enteredOdds,
           bet_amount: Number(betAmount),
+          bet_line: betLine ? Number(betLine) : null,
           result: "Pending",
           actual: null,
           profit: null,
@@ -146,6 +152,11 @@ export default function LogBetButton({ pick, sportLabel, alreadyBet }: { pick: P
               type="number" step="0.01" placeholder="$ amount" value={betAmount}
               onChange={(e) => setBetAmount(e.target.value)}
               className="w-20 px-2 py-1 rounded bg-mm-panel border border-mm-border text-mm-text"
+            />
+            <input
+              type="number" step="0.5" placeholder="line" value={betLine}
+              onChange={(e) => setBetLine(e.target.value)}
+              className="w-16 px-2 py-1 rounded bg-mm-panel border border-mm-border text-mm-text"
             />
             <input
               type="number" step="1" placeholder="odds" value={betOdds}
