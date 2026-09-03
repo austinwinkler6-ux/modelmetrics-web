@@ -9,13 +9,6 @@ import type { Bet } from "../types";
 
 const SPORTS = ["MLB", "NBA", "NBA_AST", "NFL", "NFL_COMPLETIONS", "NFL_RECEPTIONS", "LOL"];
 
-function calcProfit(betAmount: number, odds: number, result: string): number {
-  if (result !== "Win" && result !== "Loss") return 0;
-  if (result === "Loss") return -betAmount;
-  // Real, direct match to bet_math.py's own calc_profit — American odds payout math.
-  if (odds > 0) return round2((betAmount * odds) / 100);
-  return round2((betAmount * 100) / Math.abs(odds));
-}
 function round2(n: number) {
   return Math.round(n * 100) / 100;
 }
@@ -93,17 +86,6 @@ export default function BetsPage() {
         setError(String(e));
         setSubmitting(false);
       });
-  }
-
-  function updateResult(bet: Bet, result: string) {
-    const profit = bet.bet_amount && bet.odds ? calcProfit(bet.bet_amount, bet.odds, result) : null;
-    fetch(`/api/bets/${bet.id}`, {
-      method: "PATCH",
-      headers: { ...authHeader(), "Content-Type": "application/json" },
-      body: JSON.stringify({ result, profit }),
-    })
-      .then(() => loadBets())
-      .catch((e) => setError(String(e)));
   }
 
   function deleteBet(betId: string) {
@@ -455,7 +437,9 @@ export default function BetsPage() {
               <div>
                 <div className="font-display font-semibold text-mm-text">{bet.pitcher}</div>
                 <div className="text-xs text-mm-text-faint font-mono">
-                  {bet.sport} · {bet.over_under} · {bet.odds && bet.odds > 0 ? "+" : ""}{bet.odds} · ${bet.bet_amount}
+                  {bet.sport} · {bet.over_under}
+                  {(bet as any).bet_line != null && <> {(bet as any).bet_line}</>} ·{" "}
+                  {bet.odds && bet.odds > 0 ? "+" : ""}{bet.odds} · ${bet.bet_amount}
                 </div>
                 {bet.odds_clv != null ? (
                   <div className={`text-xs font-mono mt-1 ${bet.odds_clv >= 0 ? "text-mm-success" : "text-mm-danger"}`}>
@@ -473,12 +457,11 @@ export default function BetsPage() {
               </div>
               <div className="flex items-center gap-3">
                 {bet.result === "Pending" ? (
-                  <>
-                    <button onClick={() => updateResult(bet, "Win")} className="text-xs font-mono px-2 py-1 rounded-md border border-mm-success/40 text-mm-success hover:bg-mm-success/10">Win</button>
-                    <button onClick={() => updateResult(bet, "Loss")} className="text-xs font-mono px-2 py-1 rounded-md border border-mm-danger/40 text-mm-danger hover:bg-mm-danger/10">Loss</button>
-                  </>
+                  <span className="text-xs font-mono px-2 py-1 rounded-md text-mm-text-faint border border-mm-border">
+                    ⏳ Pending — grades automatically after the game
+                  </span>
                 ) : (
-                  <span className={`text-xs font-mono px-2 py-1 rounded-md ${bet.result === "Win" ? "text-mm-success" : "text-mm-danger"}`}>
+                  <span className={`text-xs font-mono px-2 py-1 rounded-md ${bet.result === "Win" ? "text-mm-success" : bet.result === "Push" ? "text-mm-text-faint" : "text-mm-danger"}`}>
                     {bet.result} {bet.profit != null && `(${bet.profit >= 0 ? "+" : ""}$${bet.profit.toFixed(2)})`}
                   </span>
                 )}
