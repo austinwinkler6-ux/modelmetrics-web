@@ -8,9 +8,12 @@ import { SPORT_KEYS } from "@/lib/sportConstants";
 
 const NAV_LABELS: Record<string, string> = {
   mlb: "MLB Strikeouts",
-  "nba-points": "NBA Points",
-  "nba-assists": "NBA Assists",
+  "mlb-batter-hits": "MLB Hits",
   "nfl-td": "NFL TD",
+  // nba-points/nba-assists/lol removed — no longer in SPORT_KEYS, see
+  // sportConstants.ts for the full reasoning. Harmless to leave these
+  // out since SPORT_KEYS.map() below is what actually drives which
+  // tabs render.
 };
 
 export default function TopNav() {
