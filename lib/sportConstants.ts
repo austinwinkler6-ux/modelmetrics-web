@@ -1,5 +1,6 @@
 export const SPORT_LABELS: Record<string, string> = {
   mlb: "⚾ MLB",
+  "mlb-batter-hits": "⚾ MLB Hits",
   "nfl-td": "🏈 NFL Touchdowns",
   // NBA Points and NBA Assists REMOVED (Sep 2026) — both backtested
   // twice against real historical odds with consistent, repeated
@@ -20,6 +21,7 @@ export const SPORT_LABELS: Record<string, string> = {
 // site's own real display/API keys.
 export const SPORT_BET_CODES: Record<string, string> = {
   mlb: "MLB",
+  "mlb-batter-hits": "MLB_BATTER_HITS",
   "nfl-td": "NFL_TD",
   // nba-points/nba-assists/lol kept out in step with SPORT_LABELS
   // above. Historical bets logged under "NBA"/"NBA_AST"/"LOL" in the
