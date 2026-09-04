@@ -206,6 +206,39 @@ function WhyThisBetSection({ pick }: { pick: PlayerPropPick }) {
   return <WhyLinesDropdown whyLines={pick.why_lines} />;
 }
 
+// Real, well-established public homepage URLs for the books that show
+// up on this site's pick cards — NOT deep links to a specific bet
+// (that requires a formal affiliate/API partnership with each book,
+// a business relationship, not something constructable from odds
+// data alone). Modern sportsbook apps register as the default handler
+// for their own domain via iOS/Android universal links, so on mobile
+// this will open the installed app directly if the user has it, and
+// fall back to the mobile site otherwise — no risky custom URL scheme
+// guessing needed.
+const SPORTSBOOK_URLS: Record<string, string> = {
+  "DraftKings": "https://sportsbook.draftkings.com/",
+  "FanDuel": "https://sportsbook.fanduel.com/",
+  "BetMGM": "https://sports.betmgm.com/",
+  "Caesars": "https://sportsbook.caesars.com/",
+  "BetRivers": "https://betrivers.com/",
+  "BetOnline.ag": "https://www.betonline.ag/sportsbook",
+};
+
+function OpenBookButton({ book }: { book: string }) {
+  const url = SPORTSBOOK_URLS[book];
+  if (!url) return null;
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-[10px] font-mono px-2 py-0.5 rounded border border-mm-accent/30 text-mm-accent hover:bg-mm-accent/10 transition"
+    >
+      Open {book} ↗
+    </a>
+  );
+}
+
 function BestLineBadge({ bestBook, altBookLines }: {
   bestBook?: string | null;
   altBookLines?: Array<{ book: string; line: number; direction: string; odds: number; ev_pct: number; tier: string }>;
@@ -223,6 +256,7 @@ function BestLineBadge({ bestBook, altBookLines }: {
           ({others.length} other book{others.length === 1 ? "" : "s"} checked)
         </span>
       )}
+      <OpenBookButton book={bestBook} />
     </div>
   );
 }
