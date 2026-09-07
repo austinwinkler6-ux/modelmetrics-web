@@ -91,13 +91,15 @@ function fmtOdds(o: number | null | undefined) {
   return o > 0 ? `+${o}` : `${o}`;
 }
 
-function OddsComparisonDropdown({ bookOdds, direction, oddsApiEventId, oddsApiSport, oddsApiMarket, playerName }: {
+function OddsComparisonDropdown({ bookOdds, direction, oddsApiEventId, oddsApiSport, oddsApiMarket, playerName, homeTeam, awayTeam }: {
   bookOdds?: Array<{ book: string; line: number | null; over: number | null; under: number | null }>;
   direction?: string;
   oddsApiEventId?: string | null;
   oddsApiSport?: string | null;
   oddsApiMarket?: string | null;
   playerName?: string;
+  homeTeam?: string | null;
+  awayTeam?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [liveOdds, setLiveOdds] = useState<Array<{ book: string; line: number | null; over: number | null; under: number | null }> | null>(null);
@@ -116,6 +118,12 @@ function OddsComparisonDropdown({ bookOdds, direction, oddsApiEventId, oddsApiSp
       market: oddsApiMarket!,
     });
     if (playerName) params.set("player", playerName);
+    // Real fix (Sep 2026) — lets the backend fall back to a fresh
+    // event_id (matched by team name) if the originally-stored one
+    // has aged out of Odds API's live event registry, instead of
+    // just permanently failing once that ID goes stale.
+    if (homeTeam) params.set("home_team", homeTeam);
+    if (awayTeam) params.set("away_team", awayTeam);
     fetch(`/api/live-odds?${params.toString()}`)
       .then((res) => res.json())
       .then((json) => {
@@ -128,7 +136,7 @@ function OddsComparisonDropdown({ bookOdds, direction, oddsApiEventId, oddsApiSp
       })
       .catch(() => setLiveFailed(true))
       .finally(() => setLiveLoading(false));
-  }, [open, canFetchLive, oddsApiEventId, oddsApiSport, oddsApiMarket, playerName, liveOdds, liveLoading, liveFailed]);
+  }, [open, canFetchLive, oddsApiEventId, oddsApiSport, oddsApiMarket, playerName, homeTeam, awayTeam, liveOdds, liveLoading, liveFailed]);
 
   if ((!bookOdds || bookOdds.length === 0) && !canFetchLive) return null;
 
@@ -395,6 +403,8 @@ export function PropCard({ pick, sportLabel, alreadyBet }: { pick: PlayerPropPic
         oddsApiSport={(pick as any).odds_api_sport}
         oddsApiMarket={(pick as any).odds_api_market}
         playerName={pick.player}
+        homeTeam={(pick as any).home_team}
+        awayTeam={(pick as any).away_team}
       />
       <WhyThisBetSection pick={pick} />
 
