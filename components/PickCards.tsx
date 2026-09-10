@@ -297,7 +297,9 @@ function AltBookLinesDropdown({ bestBook, altBookLines }: {
               <tr key={i} className="border-b border-mm-border/20">
                 <td className="py-1.5 px-1.5 text-left text-mm-text-dim">{b.book}</td>
                 <td className="py-1.5 px-1.5 text-center text-mm-text">
-                  {b.direction === "over" ? "O" : "U"} {b.line}
+                  {b.line != null
+                    ? <>{b.direction === "over" ? "O" : "U"} {b.line}</>
+                    : <>{b.direction === "yes" ? "Yes" : b.direction === "no" ? "No" : b.direction}</>}
                 </td>
                 <td className="py-1.5 px-1.5 text-center text-mm-text-dim">{fmtOdds(b.odds)}</td>
                 <td className={`py-1.5 px-1.5 text-right font-semibold ${b.ev_pct > 0 ? "text-green-400" : "text-red-400"}`}>
