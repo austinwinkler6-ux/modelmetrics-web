@@ -377,6 +377,9 @@ export function PropCard({ pick, sportLabel, alreadyBet }: { pick: PlayerPropPic
           <span className="font-mono text-sm font-semibold text-mm-text">
             {pick.recommended_pick}
             {pick.line != null && <span> {pick.line}</span>}
+            {pick.market_odds != null && (
+              <span className="text-mm-accent"> @ {fmtOdds(pick.market_odds)}</span>
+            )}
           </span>
           {pick.projection != null && (
             <div className="text-[11px] text-mm-text-faint mt-0.5">
