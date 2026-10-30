@@ -101,6 +101,13 @@ export default {
       return proxy(request, env, `/api/refresh-closing-line/${clvMatch[1]}`, true);
     }
 
+    // +EV board routes. Unlike the routes above, these pass the query string
+    // along (?limit=2000, ?sport=nba, ...) so the board's filters reach Railway.
+    const EV_ROUTES = ["/api/ev-picks", "/api/ev-performance", "/api/ev-status"];
+    if (EV_ROUTES.includes(url.pathname)) {
+      return proxy(request, env, `${url.pathname}${url.search}`, true);
+    }
+
     const route = ROUTES[url.pathname];
     if (route) {
       const bridgePath = route.bridgePath(url);
