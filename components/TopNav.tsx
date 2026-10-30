@@ -4,17 +4,6 @@ import Link from "next/link";
 
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
-import { SPORT_KEYS } from "@/lib/sportConstants";
-
-const NAV_LABELS: Record<string, string> = {
-  mlb: "MLB Strikeouts",
-  "mlb-batter-hits": "MLB Hits",
-  "nfl-td": "NFL TD",
-  // nba-points/nba-assists/lol removed — no longer in SPORT_KEYS, see
-  // sportConstants.ts for the full reasoning. Harmless to leave these
-  // out since SPORT_KEYS.map() below is what actually drives which
-  // tabs render.
-};
 
 export default function TopNav() {
   const { user, signOut } = useAuth();
@@ -52,13 +41,7 @@ export default function TopNav() {
 
       <div className="border-t border-mm-border bg-mm-panel/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-1.5 flex items-center gap-1 overflow-x-auto scrollbar-none">
-          <Link href="/top-picks" className={linkClass("/top-picks")}>Top Picks</Link>
-          <div className="w-px h-4 bg-mm-border mx-1" />
-          {SPORT_KEYS.map((sport) => (
-            <Link key={sport} href={`/${sport}`} className={linkClass(`/${sport}`)}>
-              {NAV_LABELS[sport] || sport}
-            </Link>
-          ))}
+          <Link href="/ev" className={linkClass("/ev")}>+EV Board</Link>
           <div className="w-px h-4 bg-mm-border mx-1" />
           <Link href="/bets" className={linkClass("/bets")}>Bet Tracker</Link>
           <Link href="/settings" className={linkClass("/settings")}>Settings</Link>
