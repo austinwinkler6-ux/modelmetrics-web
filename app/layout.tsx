@@ -4,8 +4,8 @@ import { AuthProvider } from "@/lib/AuthContext";
 import TopNav from "@/components/TopNav";
 
 export const metadata: Metadata = {
-  title: "Model Metrics — Sharp Data. Sharp Bets.",
-  description: "Player prop analytics across MLB, NBA, NFL, and Esports.",
+  title: "Model Metrics — Sharp Prices. +EV Bets.",
+  description: "Find +EV player props by comparing sportsbook prices to the fair price from sharp books. NFL, NBA, and MLB.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
