@@ -9,7 +9,7 @@ import { useAuth } from "@/lib/AuthContext";
 import LoginForm from "@/components/LoginForm";
 import { easternDateStr } from "@/lib/dateUtils";
 
-type Shop = { book: string; odds: number; ev_pct: number };
+type Shop = { book: string; odds: number; ev_pct: number | null; sharp?: boolean; opp?: number | null };
 type Pick = {
   id: string; sport: string; event_id: string; event: string; commence: string; market: string; player: string;
   point: number | null; side: string; pick: string; book: string; odds: number; fair_prob: number; fair_odds: number;
@@ -77,6 +77,7 @@ const CONF_STYLE: Record<string, string> = {
   medium: "bg-mm-accent/15 text-mm-accent border-mm-accent/30",
   low: "bg-mm-panel-2 text-mm-text-faint border-mm-border",
 };
+const OPPOSITE: Record<string, string> = { Over: "Under", Under: "Over", Yes: "No", No: "Yes" };
 const CONF_LABEL: Record<string, string> = { high: "Sharp-confirmed", medium: "2 sharps", low: "1 sharp source" };
 
 // ───────────────────────── log bet ─────────────────────────
@@ -203,15 +204,35 @@ function EvCard({ p }: { p: Pick }) {
               </div>
             </div>
             <div>
-              <div className="text-mm-text-faint uppercase tracking-wide text-[10px] mb-1">Same bet at other books</div>
-              {p.shop.length === 0 && <div className="text-mm-text-faint">No other soft book posts this line.</div>}
-              {p.shop.map((s) => (
-                <div key={s.book} className="flex justify-between border-b border-mm-border/50 py-0.5 text-mm-text-dim">
-                  <span>{bookLabel(s.book)}</span>
-                  <span className="mm-tabular">{fmtOdds(s.odds)} <span className={s.ev_pct >= 0 ? "text-mm-success" : "text-mm-text-faint"}>({s.ev_pct >= 0 ? "+" : ""}{s.ev_pct.toFixed(1)}%)</span></span>
+              <div className="text-mm-text-faint uppercase tracking-wide text-[10px] mb-1">Every book, best price first</div>
+              {p.shop.length === 0 && <div className="text-mm-text-faint">No other book posts this line.</div>}
+              {p.shop.length > 0 && (
+                <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 items-center">
+                  <div className="text-[10px] text-mm-text-faint uppercase">Book</div>
+                  <div className="text-[10px] text-mm-text-faint uppercase text-right">{p.side}</div>
+                  <div className="text-[10px] text-mm-text-faint uppercase text-right">{OPPOSITE[p.side] || "Other side"}</div>
+                  <div className="text-[10px] text-mm-text-faint uppercase text-right">EV</div>
+                  {p.shop.map((s) => {
+                    const mine = s.book === p.book;
+                    const row = mine ? "text-mm-accent font-semibold" : "text-mm-text-dim";
+                    return (
+                      <div key={s.book} className="contents">
+                        <div className={`border-b border-mm-border/50 py-0.5 ${row}`}>
+                          {bookLabel(s.book)}
+                          {s.sharp && <span className="ml-1.5 text-[9px] px-1 rounded border border-mm-border text-mm-text-faint">SHARP</span>}
+                          {mine && <span className="ml-1.5 text-[9px] text-mm-accent">← bet</span>}
+                        </div>
+                        <div className={`border-b border-mm-border/50 py-0.5 text-right mm-tabular ${row}`}>{fmtOdds(s.odds)}</div>
+                        <div className={`border-b border-mm-border/50 py-0.5 text-right mm-tabular ${row}`}>{s.opp != null ? fmtOdds(s.opp) : "–"}</div>
+                        <div className={`border-b border-mm-border/50 py-0.5 text-right mm-tabular ${s.ev_pct != null && s.ev_pct >= 0 ? "text-mm-success" : "text-mm-text-faint"}`}>
+                          {s.ev_pct != null ? `${s.ev_pct >= 0 ? "+" : ""}${s.ev_pct.toFixed(1)}%` : "–"}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
-              <div className="text-[11px] text-mm-text-faint mt-1">Price last seen {p.age_minutes != null ? `${p.age_minutes} min ago` : "recently"}. Check the live price before you bet.</div>
+              )}
+              <div className="text-[11px] text-mm-text-faint mt-1">Sharp books set the fair price; soft books are where you bet. Price last seen {p.age_minutes != null ? `${p.age_minutes} min ago` : "recently"}. Check the live price before you bet.</div>
             </div>
           </div>
         )}
