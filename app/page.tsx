@@ -2,115 +2,28 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import type { AllPicksResponse, PlayerPropPick, LolPick, SubscriptionStatus } from "./types";
+import type { SubscriptionStatus } from "./types";
 import { useAuth } from "@/lib/AuthContext";
 import LoginForm from "@/components/LoginForm";
-import { PropCard, LolCard, TierBadge } from "@/components/PickCards";
 import TrialEndedContent from "@/components/TrialEndedContent";
-import { SPORT_LABELS, SPORT_BET_CODES } from "@/lib/sportConstants";
-import { easternDateStr } from "@/lib/dateUtils";
 
 /* ───────────────────────────────────────────
-   Play of the Day — featured hero card
+   Small helpers
    ─────────────────────────────────────────── */
-function PlayOfTheDay({ pick, sportKey }: { pick: PlayerPropPick | LolPick; sportKey: string }) {
-  const isLol = "home_team" in pick;
-  const label = SPORT_LABELS[sportKey] || sportKey.toUpperCase();
+const BOOK_LABELS: Record<string, string> = {
+  betmgm: "BetMGM", williamhill_us: "Caesars", courtside: "Courtside", draftkings: "DraftKings", fanduel: "FanDuel",
+  fanatics: "Fanatics", hardrockbet: "Hard Rock", espnbet: "ESPN BET", betrivers: "BetRivers", bovada: "Bovada",
+  ballybet: "Bally Bet", betparx: "betPARX", fliff: "Fliff",
+};
+const bookLabel = (b: string) => BOOK_LABELS[b] || b;
+const fmtOdds = (o: number) => (o > 0 ? `+${o}` : `${o}`);
+const SPORT_LABELS: Record<string, string> = { nfl: "NFL", nba: "NBA", mlb: "MLB" };
 
-  return (
-    <section className="mb-12">
-      <div className="flex items-center gap-2.5 mb-4">
-        <div className="w-1.5 h-1.5 rounded-full bg-mm-accent animate-pulse" />
-        <span className="text-mm-accent font-mono text-[11px] tracking-[0.15em] uppercase font-semibold">
-          Play of the Day
-        </span>
-      </div>
-
-      <div className="relative rounded-2xl bg-gradient-to-br from-mm-panel via-mm-panel to-mm-accent/[0.04] border border-mm-accent/20 p-6 sm:p-8 overflow-hidden">
-        {/* Subtle accent glow */}
-        <div className="absolute top-0 right-0 w-48 h-48 bg-mm-accent/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
-
-        <div className="relative">
-          <div className="flex items-center gap-2.5 mb-4">
-            <span className="text-[11px] font-mono px-2.5 py-0.5 rounded bg-mm-accent/10 text-mm-accent border border-mm-accent/20">
-              {label}
-            </span>
-            <TierBadge tier={pick.mm_tier} />
-          </div>
-
-          {isLol ? (
-            <>
-              <div className="font-display text-2xl sm:text-3xl font-bold text-mm-text mb-1">
-                {(pick as LolPick).predicted_winner}
-              </div>
-              <div className="text-sm text-mm-text-faint mb-5">
-                {(pick as LolPick).home_team} vs {(pick as LolPick).away_team}
-              </div>
-              <div className="flex flex-wrap items-end gap-6">
-                <div>
-                  <div className="text-mm-text-faint text-[10px] font-mono uppercase tracking-wider mb-1">Pick</div>
-                  <div className="font-mono text-lg font-semibold text-mm-text">
-                    {(pick as LolPick).recommended_pick}
-                  </div>
-                </div>
-                {(pick as LolPick).model_probability != null && (
-                  <div>
-                    <div className="text-mm-text-faint text-[10px] font-mono uppercase tracking-wider mb-1">Win Prob</div>
-                    <div className="font-mono text-lg font-semibold text-mm-text">
-                      {((pick as LolPick).model_probability! * 100).toFixed(1)}%
-                    </div>
-                  </div>
-                )}
-                {pick.ev_pct != null && (
-                  <div>
-                    <div className="text-mm-text-faint text-[10px] font-mono uppercase tracking-wider mb-1">Edge</div>
-                    <div className="font-mono text-2xl font-bold text-mm-accent">
-                      {pick.ev_pct >= 0 ? "+" : ""}{pick.ev_pct}%
-                    </div>
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="font-display text-2xl sm:text-3xl font-bold text-mm-text mb-1">
-                {(pick as PlayerPropPick).player}
-              </div>
-              <div className="text-sm text-mm-text-faint mb-5">
-                {(pick as PlayerPropPick).matchup}
-              </div>
-              <div className="flex flex-wrap items-end gap-6">
-                <div>
-                  <div className="text-mm-text-faint text-[10px] font-mono uppercase tracking-wider mb-1">Pick</div>
-                  <div className="font-mono text-lg font-semibold text-mm-text">
-                    {(pick as PlayerPropPick).recommended_pick}
-                    {(pick as PlayerPropPick).line != null && <span> {(pick as PlayerPropPick).line}</span>}
-                  </div>
-                </div>
-                {(pick as PlayerPropPick).projection != null && (
-                  <div>
-                    <div className="text-mm-text-faint text-[10px] font-mono uppercase tracking-wider mb-1">Projection</div>
-                    <div className="font-mono text-lg font-semibold text-mm-text">
-                      {(pick as PlayerPropPick).projection}
-                    </div>
-                  </div>
-                )}
-                {pick.ev_pct != null && (
-                  <div>
-                    <div className="text-mm-text-faint text-[10px] font-mono uppercase tracking-wider mb-1">Edge</div>
-                    <div className="font-mono text-2xl font-bold text-mm-accent">
-                      {pick.ev_pct >= 0 ? "+" : ""}{pick.ev_pct}%
-                    </div>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
+type TopPick = {
+  id: string; sport: string; event: string; player: string; pick: string; book: string; odds: number;
+  fair_odds: number; ev_pct: number; market: string;
+};
+type EvSummary = { total_live: number; picks: TopPick[]; last_updated: string | null; facets?: { sports: Record<string, number> } };
 
 /* ───────────────────────────────────────────
    How It Works — 3-step explainer
@@ -124,8 +37,8 @@ function HowItWorks() {
           <path d="M9 12h6M12 9v6" />
         </svg>
       ),
-      title: "We collect the data",
-      body: "Live odds from every major sportsbook, player stats, matchup history, and market prices — all pulled automatically, every two hours.",
+      title: "We scan the market",
+      body: "Player-prop prices from the sharpest books and from the soft books you actually bet at, refreshed all day and more often as games get close.",
     },
     {
       icon: (
@@ -133,8 +46,8 @@ function HowItWorks() {
           <path d="M3 12h4l3 8 4-16 3 8h4" />
         </svg>
       ),
-      title: "Our models find the edge",
-      body: "Sport-specific projection models calculate expected outcomes and compare them to sportsbook lines. When the model disagrees with the market, that's your edge.",
+      title: "We find the fair price",
+      body: "Sharp books take the biggest bets and have the most accurate lines. We strip out their vig and blend them, Pinnacle weighted most, into one fair price for every prop.",
     },
     {
       icon: (
@@ -143,8 +56,8 @@ function HowItWorks() {
           <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
-      title: "You get the picks",
-      body: "Every pick comes with a tier rating, EV%, recommended stake, and a full breakdown of why the model likes it. Compare odds across books to find the best price.",
+      title: "You see what's mispriced",
+      body: "When a soft book pays more than the fair price says it should, it shows up with its EV%, the fair odds, a suggested stake, and every book's price side by side.",
     },
   ];
 
@@ -176,25 +89,25 @@ function AboutSection() {
       <div className="rounded-xl bg-mm-panel border border-mm-border p-6 sm:p-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div>
-            <h3 className="font-display font-semibold text-mm-text mb-3">Data-driven, not gut-driven</h3>
+            <h3 className="font-display font-semibold text-mm-text mb-3">We measure prices, not predict games</h3>
             <p className="text-[13px] text-mm-text-dim leading-relaxed mb-4">
-              Model Metrics is a sports analytics platform built by bettors who got tired of relying on hunches.
-              Every pick on this site is generated by a quantitative model — no tipsters, no narratives, no bias.
+              Model Metrics is a +EV finder. We don&apos;t guess who will go over or under. We compare what each sportsbook
+              is paying with the fair price set by the sharpest books in the market, and show you where the gap is.
             </p>
             <p className="text-[13px] text-mm-text-dim leading-relaxed">
-              We cover MLB strikeouts, NBA points and assists, NFL passing props, and League of Legends match winners.
-              Each sport has its own purpose-built model trained on real historical data.
+              +EV means a bet that wins more often than its odds imply. It is a long-run edge, not a guaranteed win, so
+              expect losing bets and size them sensibly.
             </p>
           </div>
           <div>
-            <h3 className="font-display font-semibold text-mm-text mb-3">What makes us different</h3>
+            <h3 className="font-display font-semibold text-mm-text mb-3">Everything is shown, nothing is hidden</h3>
             <p className="text-[13px] text-mm-text-dim leading-relaxed mb-4">
-              Most betting sites give you a pick and say "trust me." We show you exactly why the model likes a bet —
-              the projection, the edge, the probability, and how it compares across every sportsbook.
+              Every pick shows how the fair price was built, how confident we are in it, and the price at every book,
+              so you can check the work and shop for the best number yourself.
             </p>
             <p className="text-[13px] text-mm-text-dim leading-relaxed">
-              We track every pick we make and publish our results. If the model is wrong, you'll see it. No hiding
-              losing streaks, no selective reporting. Full transparency, always.
+              We also track how our flagged prices compare with the sharp closing line once games start, and publish
+              that on the +EV Board, good or bad.
             </p>
           </div>
         </div>
@@ -204,32 +117,48 @@ function AboutSection() {
 }
 
 /* ───────────────────────────────────────────
-   Sports covered strip
+   Coverage
    ─────────────────────────────────────────── */
-function SportsCovered() {
+function Coverage() {
   const sports = [
-    { name: "MLB Strikeouts", emoji: "⚾" },
-    { name: "NBA Points", emoji: "🏀" },
-    { name: "NBA Assists", emoji: "🏀" },
-    { name: "NFL Pass Attempts", emoji: "🏈" },
-    { name: "NFL Completions", emoji: "🏈" },
-    { name: "NFL Receptions", emoji: "🏈" },
-    { name: "LoL Esports", emoji: "🎮" },
+    { name: "NFL", detail: "Every player prop market", emoji: "🏈" },
+    { name: "NBA", detail: "Points, rebounds, assists, threes, PRA, PR, PA, RA", emoji: "🏀" },
+    { name: "MLB", detail: "Pitcher and batter props", emoji: "⚾" },
   ];
+  const sharps = ["Pinnacle", "BetOnline", "Novig", "ProphetX", "Polymarket"];
+  const softs = ["BetMGM", "Caesars", "Courtside", "DraftKings", "FanDuel"];
 
   return (
     <section className="mb-16">
       <h2 className="font-display text-xl font-bold text-mm-text mb-6">What We Cover</h2>
-      <div className="flex flex-wrap gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         {sports.map((s) => (
-          <div
-            key={s.name}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-mm-panel border border-mm-border text-sm text-mm-text-dim"
-          >
-            <span>{s.emoji}</span>
-            <span className="font-mono text-[12px]">{s.name}</span>
+          <div key={s.name} className="rounded-xl bg-mm-panel border border-mm-border p-4">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span>{s.emoji}</span>
+              <span className="font-display font-semibold text-mm-text">{s.name}</span>
+            </div>
+            <div className="text-[13px] text-mm-text-dim">{s.detail}</div>
           </div>
         ))}
+      </div>
+      <div className="rounded-xl bg-mm-panel border border-mm-border p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div>
+          <div className="text-[10px] font-mono text-mm-text-faint uppercase tracking-wider mb-2">Sharp books set the fair price</div>
+          <div className="flex flex-wrap gap-2">
+            {sharps.map((b) => (
+              <span key={b} className="font-mono text-[12px] px-3 py-1 rounded-lg bg-mm-panel-2 border border-mm-border text-mm-text-dim">{b}</span>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div className="text-[10px] font-mono text-mm-text-faint uppercase tracking-wider mb-2">Soft books we check for mispriced lines</div>
+          <div className="flex flex-wrap gap-2">
+            {softs.map((b) => (
+              <span key={b} className="font-mono text-[12px] px-3 py-1 rounded-lg bg-mm-panel-2 border border-mm-border text-mm-text-dim">{b}</span>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -240,13 +169,12 @@ function SportsCovered() {
    ─────────────────────────────────────────── */
 export default function Home() {
   const { user, session, loading: authLoading, signOut } = useAuth();
-  const [data, setData] = useState<AllPicksResponse | null>(null);
+  const [ev, setEv] = useState<EvSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sub, setSub] = useState<SubscriptionStatus | null>(null);
   const [subLoading, setSubLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [confirmingCheckout, setConfirmingCheckout] = useState(false);
-  const [betNames, setBetNames] = useState<Set<string>>(new Set());
 
   function refreshSubscription() {
     if (!session) return;
@@ -302,43 +230,17 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
+  // live +EV snapshot for the dashboard (same endpoint the +EV Board uses)
   useEffect(() => {
-    if (!user || !sub || sub.status === "expired") return;
-    fetch("/api/picks?sport=all")
+    if (!user || !session || !sub || sub.status === "expired") return;
+    fetch("/api/ev-picks?limit=200", { headers: { Authorization: `Bearer ${session.access_token}` } })
       .then((res) => res.json())
       .then((json) => {
         if (json.error) setError(json.error);
-        else setData(json);
+        else setEv(json);
       })
       .catch((e) => setError(String(e)));
-  }, [user, sub]);
-
-  useEffect(() => {
-    if (!session) return;
-    fetch("/api/bets", {
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    })
-      .then((res) => res.json())
-      .then((json) => {
-        const today = easternDateStr();
-        const names = new Set<string>();
-        for (const b of json.bets || []) {
-          if (b.date === today) {
-            names.add(b.pitcher?.toLowerCase() || "");
-          }
-        }
-        setBetNames(names);
-      })
-      .catch(() => {});
-  }, [session]);
-
-  function isAlreadyBet(pick: PlayerPropPick | LolPick): boolean {
-    if ("home_team" in pick) {
-      const name = `${pick.home_team} vs ${pick.away_team}`.toLowerCase();
-      return betNames.has(name);
-    }
-    return betNames.has(((pick as PlayerPropPick).player || "").toLowerCase());
-  }
+  }, [user, session, sub]);
 
   function startCheckout() {
     if (!session) return;
@@ -363,31 +265,6 @@ export default function Home() {
       });
   }
 
-  /* ─── Find Play of the Day ─── */
-  function getPlayOfTheDay(): { pick: PlayerPropPick | LolPick; sportKey: string } | null {
-    if (!data) return null;
-    let bestPick: PlayerPropPick | LolPick | null = null;
-    let bestSport = "";
-    let bestScore = -Infinity;
-
-    for (const [sportKey, picks] of Object.entries(data.sports)) {
-      if (sportKey === "lol") continue; // Play of the Day excludes esports
-      if (sportKey !== "mlb") continue; // MLB only for now
-      for (const pick of picks) {
-        // Tier priority: Best Bet > Worth a Look > Lean
-        const tierScore = pick.mm_tier === "🟢 Best Bet" ? 100 : pick.mm_tier === "🟡 Worth a Look" ? 50 : 0;
-        const evScore = pick.ev_pct ?? 0;
-        const score = tierScore + evScore;
-        if (score > bestScore) {
-          bestScore = score;
-          bestPick = pick;
-          bestSport = sportKey;
-        }
-      }
-    }
-    return bestPick ? { pick: bestPick, sportKey: bestSport } : null;
-  }
-
   // ─── Loading states ───
   if (authLoading) {
     return (
@@ -401,27 +278,25 @@ export default function Home() {
   if (!user) {
     return (
       <main className="min-h-screen px-6 py-12 max-w-5xl mx-auto">
-        {/* Hero */}
         <div className="text-center mb-16 pt-8">
           <div className="text-mm-accent font-mono text-[11px] tracking-[0.2em] uppercase mb-4 font-semibold">
-            Player Prop Analytics
+            +EV Player Props
           </div>
           <h1 className="font-display text-5xl sm:text-6xl font-bold text-mm-text tracking-tight mb-4">
-            Sharp Data.<br />Sharp Bets.
+            Sharp Prices.<br />+EV Bets.
           </h1>
           <p className="text-mm-text-dim text-base max-w-lg mx-auto mb-8 leading-relaxed">
-            Quantitative models for MLB, NBA, NFL, and esports. Every pick backed by data, every edge measured.
+            We compare every sportsbook&apos;s player-prop prices to the fair price from the sharpest books in the
+            market, and flag the bets that beat it. NFL, NBA, and MLB.
           </p>
         </div>
 
-        {/* Login */}
         <div className="mb-16">
           <LoginForm />
         </div>
 
-        {/* How it works + About — visible to everyone */}
         <HowItWorks />
-        <SportsCovered />
+        <Coverage />
         <AboutSection />
 
         <footer className="text-center text-mm-text-faint font-mono text-[10px] pb-8">
@@ -452,11 +327,11 @@ export default function Home() {
       <main className="min-h-screen px-6 py-16 max-w-2xl mx-auto">
         <div className="text-center mb-10">
           <div className="text-mm-accent font-mono text-xs tracking-widest uppercase mb-3">
-            Player Prop Analytics
+            +EV Player Props
           </div>
           <h1 className="font-display text-3xl font-bold text-mm-text mb-3">Your trial has ended</h1>
           <p className="text-mm-text-dim mb-6 max-w-md mx-auto">
-            Subscribe to unlock full access to all picks, recommended stakes, and bet tracking.
+            Subscribe to unlock the full +EV Board, every book&apos;s prices, suggested stakes, and bet tracking.
           </p>
           {error && <div className="text-mm-danger font-mono text-sm mb-4">{error}</div>}
           <button
@@ -478,13 +353,10 @@ export default function Home() {
     );
   }
 
-  // ─── Logged in — main dashboard ───
-  const playOfTheDay = getPlayOfTheDay();
-
-  const allPicks = data ? Object.values(data.sports).flat() : [];
-  const evValues = allPicks.map((p) => p.ev_pct).filter((v): v is number => v != null);
-  const avgEdge = evValues.length > 0 ? evValues.reduce((a, b) => a + b, 0) / evValues.length : null;
-  const bestBetCount = allPicks.filter((p) => p.mm_tier === "🟢 Best Bet").length;
+  // ─── Logged in — dashboard ───
+  const top = ev?.picks.slice(0, 5) ?? [];
+  const bestEdge = ev && ev.picks.length > 0 ? Math.max(...ev.picks.map((p) => p.ev_pct)) : null;
+  const gameCount = ev ? new Set(ev.picks.map((p) => p.event)).size : null;
   const todayStr = new Date().toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 
   return (
@@ -495,87 +367,84 @@ export default function Home() {
         </div>
       )}
 
-      {/* Hero tagline */}
       <div className="text-center mb-10">
         <div className="text-mm-accent font-mono text-[11px] tracking-[0.2em] uppercase mb-3">
-          Player Prop Analytics
+          +EV Player Props
         </div>
-        <h1 className="font-display text-5xl font-bold text-mm-text tracking-tight">Sharp Data. Sharp Bets.</h1>
+        <h1 className="font-display text-5xl font-bold text-mm-text tracking-tight mb-5">Sharp Prices. +EV Bets.</h1>
+        <Link
+          href="/ev"
+          className="inline-block px-7 py-2.5 rounded-lg bg-mm-accent text-mm-bg font-display font-semibold hover:brightness-110 transition"
+        >
+          Open the +EV Board
+        </Link>
       </div>
 
       {/* Signal strip */}
-      {data && (
+      {ev && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
           <div className="rounded-2xl bg-mm-panel border border-mm-border p-4">
-            <div className="flex justify-between items-start mb-3">
-              <span className="text-[11px] text-mm-text-faint uppercase tracking-wide">Live Signals</span>
-              <span className="w-7 h-7 rounded-lg bg-mm-accent/15 flex items-center justify-center text-mm-accent">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h4l3 8 4-16 3 8h4" /></svg>
-              </span>
-            </div>
-            <div className="font-mono text-2xl font-bold text-mm-text mm-tabular">{data.total_count}</div>
+            <div className="text-[11px] text-mm-text-faint uppercase tracking-wide mb-3">Live +EV Bets</div>
+            <div className="font-mono text-2xl font-bold text-mm-text mm-tabular">{ev.total_live}</div>
           </div>
-
           <div className="rounded-2xl bg-mm-panel border border-mm-border p-4">
-            <div className="flex justify-between items-start mb-3">
-              <span className="text-[11px] text-mm-text-faint uppercase tracking-wide">Avg Edge</span>
-              <span className="w-7 h-7 rounded-lg bg-mm-success/15 flex items-center justify-center text-mm-success">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 17l6-6 4 4 8-8M15 7h6v6" /></svg>
-              </span>
-            </div>
+            <div className="text-[11px] text-mm-text-faint uppercase tracking-wide mb-3">Best Edge Now</div>
             <div className="font-mono text-2xl font-bold text-mm-success mm-tabular">
-              {avgEdge != null ? `${avgEdge >= 0 ? "+" : ""}${avgEdge.toFixed(1)}%` : "—"}
+              {bestEdge != null ? `+${bestEdge.toFixed(1)}%` : "—"}
             </div>
           </div>
-
           <div className="rounded-2xl bg-mm-panel border border-mm-border p-4">
-            <div className="flex justify-between items-start mb-3">
-              <span className="text-[11px] text-mm-text-faint uppercase tracking-wide">Best Bets</span>
-              <span className="w-7 h-7 rounded-lg bg-mm-accent/15 flex items-center justify-center text-mm-accent">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4" /></svg>
-              </span>
-            </div>
-            <div className="font-mono text-2xl font-bold text-mm-text mm-tabular">{bestBetCount}</div>
+            <div className="text-[11px] text-mm-text-faint uppercase tracking-wide mb-3">Games With +EV</div>
+            <div className="font-mono text-2xl font-bold text-mm-text mm-tabular">{gameCount ?? "—"}</div>
           </div>
-
           <div className="rounded-2xl bg-mm-panel border border-mm-border p-4">
-            <div className="flex justify-between items-start mb-3">
-              <span className="text-[11px] text-mm-text-faint uppercase tracking-wide">Today</span>
-              <span className="w-7 h-7 rounded-lg bg-mm-panel-2 flex items-center justify-center text-mm-text-dim">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M3 9h18M8 2v4M16 2v4" /></svg>
-              </span>
-            </div>
+            <div className="text-[11px] text-mm-text-faint uppercase tracking-wide mb-3">Today</div>
             <div className="font-mono text-lg font-bold text-mm-text">{todayStr}</div>
           </div>
         </div>
       )}
 
-      {/* Play of the Day */}
-      {playOfTheDay && (
-        <PlayOfTheDay pick={playOfTheDay.pick} sportKey={playOfTheDay.sportKey} />
-      )}
+      {error && <div className="text-center text-mm-danger font-mono text-sm mb-8">{error}</div>}
+      {!ev && !error && <div className="text-center text-mm-text-dim font-mono text-sm mb-12">Loading the board...</div>}
 
-      {error && (
-        <div className="text-center text-mm-danger font-mono text-sm mb-8">{error}</div>
-      )}
-
-      {data?.errors && Object.keys(data.errors).length > 0 && (
-        <div className="mb-8 p-4 rounded-xl border border-mm-danger/30 bg-mm-danger/5">
-          <div className="text-mm-danger font-mono text-xs mb-2">⚠️ Some sports had errors loading:</div>
-          {Object.entries(data.errors).map(([sport, msg]) => (
-            <div key={sport} className="text-xs text-mm-text-dim font-mono">
-              {sport}: {msg}
+      {/* Top edges right now */}
+      {top.length > 0 && (
+        <section className="mb-12">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-mm-accent animate-pulse" />
+              <span className="text-mm-accent font-mono text-[11px] tracking-[0.15em] uppercase font-semibold">Top edges right now</span>
             </div>
-          ))}
-        </div>
+            <Link href="/ev" className="text-xs font-mono text-mm-accent hover:underline">See all →</Link>
+          </div>
+          <div className="rounded-2xl bg-mm-panel border border-mm-border divide-y divide-mm-border/60">
+            {top.map((p) => (
+              <Link key={p.id} href="/ev" className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-mm-panel-2/60 transition">
+                <div className="min-w-0">
+                  <div className="font-display font-semibold text-mm-text truncate">{p.player} <span className="font-mono text-sm text-mm-text-dim">{p.pick}</span></div>
+                  <div className="font-mono text-[11px] text-mm-text-faint truncate">
+                    {SPORT_LABELS[p.sport] || p.sport} · {p.event}
+                  </div>
+                </div>
+                <div className="flex items-center gap-5 shrink-0 text-right">
+                  <div className="hidden sm:block">
+                    <div className="font-mono text-[10px] text-mm-text-faint uppercase">Bet at</div>
+                    <div className="font-mono text-sm text-mm-text mm-tabular">{bookLabel(p.book)} {fmtOdds(p.odds)}</div>
+                  </div>
+                  <div className="hidden sm:block">
+                    <div className="font-mono text-[10px] text-mm-text-faint uppercase">Fair</div>
+                    <div className="font-mono text-sm text-mm-text-dim mm-tabular">{fmtOdds(p.fair_odds)}</div>
+                  </div>
+                  <div className="font-mono text-xl font-bold text-mm-success mm-tabular">+{p.ev_pct.toFixed(1)}%</div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
       )}
 
-      {!data && !error && (
-        <div className="text-center text-mm-text-dim font-mono text-sm">Loading today&apos;s picks...</div>
-      )}
-
-      {/* How it works + About — below picks for logged-in users */}
       <HowItWorks />
+      <Coverage />
       <AboutSection />
 
       <footer className="text-center text-mm-text-faint font-mono text-[10px] pb-8">
