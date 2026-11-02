@@ -12,8 +12,8 @@ import TrialEndedContent from "@/components/TrialEndedContent";
    ─────────────────────────────────────────── */
 const BOOK_LABELS: Record<string, string> = {
   betmgm: "BetMGM", williamhill_us: "Caesars", courtside: "Courtside", draftkings: "DraftKings", fanduel: "FanDuel",
-  fanatics: "Fanatics", hardrockbet: "Hard Rock", espnbet: "ESPN BET", betrivers: "BetRivers", bovada: "Bovada",
-  ballybet: "Bally Bet", betparx: "betPARX", fliff: "Fliff",
+  fanatics: "Fanatics", hardrockbet: "Hard Rock", espnbet: "theScore Bet", betrivers: "BetRivers", bovada: "Bovada",
+  rebet: "Rebet", ballybet: "Bally Bet", betparx: "betPARX", fliff: "Fliff",
 };
 const bookLabel = (b: string) => BOOK_LABELS[b] || b;
 const fmtOdds = (o: number) => (o > 0 ? `+${o}` : `${o}`);
@@ -126,7 +126,7 @@ function Coverage() {
     { name: "MLB", detail: "Pitcher and batter props", emoji: "⚾" },
   ];
   const sharps = ["Pinnacle", "BetOnline", "Novig", "ProphetX", "Polymarket"];
-  const softs = ["BetMGM", "Caesars", "Courtside", "DraftKings", "FanDuel"];
+  const softs = ["BetMGM", "Caesars", "DraftKings", "FanDuel", "Fanatics", "Fliff", "Courtside", "Rebet", "theScore Bet"];
 
   return (
     <section className="mb-16">
