@@ -32,8 +32,8 @@ type Perf = {
 
 const BOOK_LABELS: Record<string, string> = {
   betmgm: "BetMGM", williamhill_us: "Caesars", courtside: "Courtside", draftkings: "DraftKings", fanduel: "FanDuel",
-  fanatics: "Fanatics", hardrockbet: "Hard Rock", espnbet: "ESPN BET", betrivers: "BetRivers", bovada: "Bovada",
-  ballybet: "Bally Bet", betparx: "betPARX", fliff: "Fliff", pinnacle: "Pinnacle", betonlineag: "BetOnline",
+  fanatics: "Fanatics", hardrockbet: "Hard Rock", espnbet: "theScore Bet", betrivers: "BetRivers", bovada: "Bovada",
+  rebet: "Rebet", ballybet: "Bally Bet", betparx: "betPARX", fliff: "Fliff", pinnacle: "Pinnacle", betonlineag: "BetOnline",
   novig: "Novig", prophetx: "ProphetX", polymarket: "Polymarket", lowvig: "LowVig", kalshi: "Kalshi",
 };
 const SPORT_LABELS: Record<string, string> = { nfl: "NFL", nba: "NBA", mlb: "MLB" };
