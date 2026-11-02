@@ -17,6 +17,12 @@ type Pick = {
   kelly_quarter_pct: number; shop: Shop[]; first_seen: string | null; last_seen: string | null;
   confidence: "high" | "medium" | "low"; age_minutes: number | null; minutes_to_start: number;
 };
+type Refresh = {
+  status: string; message?: string; checked_at?: string; still_plus_ev?: boolean;
+  before?: { odds: number; ev_pct: number; fair_odds: number };
+  best_now?: { book: string; odds: number; ev_pct: number };
+  fields?: Partial<Pick>;
+};
 type Facets = { sports: Record<string, number>; markets: Record<string, number>; books: Record<string, number> };
 type Perf = {
   overall: { n: number; avg_ev_at_flag_pct?: number; avg_ev_at_close_pct?: number; pct_positive_at_close?: number };
@@ -143,7 +149,25 @@ function LogForm({ p, onDone }: { p: Pick; onDone: (logged: boolean) => void }) 
 }
 
 // ───────────────────────── card ─────────────────────────
-function EvCard({ p }: { p: Pick }) {
+function EvCard({ p: base }: { p: Pick }) {
+  const { session } = useAuth();
+  const [live, setLive] = useState<Refresh | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const p: Pick = live?.fields ? ({ ...base, ...live.fields } as Pick) : base;
+
+  function refreshPrice() {
+    if (!session || refreshing) return;
+    setRefreshing(true);
+    fetch("/api/ev-refresh", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ id: base.id }),
+    })
+      .then((r) => r.json())
+      .then((j) => { setLive(j.error ? { status: "error", message: j.error === "subscription_required" ? "Your access has expired." : String(j.error) } : j); setRefreshing(false); })
+      .catch(() => { setLive({ status: "error", message: "Couldn't refresh right now. Try again in a moment." }); setRefreshing(false); });
+  }
+
   const [open, setOpen] = useState(false);
   const [logging, setLogging] = useState(false);
   const [logged, setLogged] = useState(false);
@@ -163,7 +187,7 @@ function EvCard({ p }: { p: Pick }) {
             </div>
           </div>
           <div className="text-right shrink-0">
-            <div className="font-mono text-2xl font-bold mm-tabular" style={{ color: evColor(p.ev_pct) }}>+{p.ev_pct.toFixed(1)}%</div>
+            <div className="font-mono text-2xl font-bold mm-tabular" style={{ color: evColor(p.ev_pct) }}>{p.ev_pct >= 0 ? "+" : ""}{p.ev_pct.toFixed(1)}%</div>
             <div className="font-mono text-[10px] text-mm-text-faint uppercase tracking-wide">EV</div>
           </div>
         </div>
@@ -184,9 +208,36 @@ function EvCard({ p }: { p: Pick }) {
               <button onClick={() => setLogging(!logging)}
                 className="text-xs font-mono px-2 py-1 rounded-md border border-mm-border text-mm-text-dim hover:border-mm-accent hover:text-mm-accent">📝 Log</button>
             )}
+            <button onClick={refreshPrice} disabled={refreshing}
+              className="text-xs font-mono px-2 py-1 rounded-md border border-mm-border text-mm-text-dim hover:border-mm-accent hover:text-mm-accent disabled:opacity-50">
+              {refreshing ? "Checking…" : "⟳ Refresh"}
+            </button>
             <button onClick={() => setOpen(!open)} className="text-xs font-mono text-mm-accent hover:underline">{open ? "Less" : "Details"}</button>
           </div>
         </div>
+
+        {live && (
+          <div className="mt-3 rounded-lg border border-mm-border bg-mm-panel-2 px-3 py-2 text-xs font-mono">
+            {live.status === "ok" && live.before && live.fields ? (
+              <>
+                <div className="text-mm-text-dim">
+                  Just checked: {bookLabel(base.book)} {fmtOdds(live.before.odds)} → <span className="text-mm-text font-semibold">{fmtOdds(live.fields.odds ?? live.before.odds)}</span>
+                  {" · "}EV {live.before.ev_pct.toFixed(1)}% → <span className="text-mm-text font-semibold">{(live.fields.ev_pct ?? 0).toFixed(1)}%</span>
+                </div>
+                {live.still_plus_ev ? (
+                  <div className="text-mm-success mt-0.5">Still +EV at this price.</div>
+                ) : (
+                  <div className="text-mm-danger mt-0.5">No longer +EV at this price. Don&apos;t bet it.</div>
+                )}
+                {live.best_now && live.best_now.book !== base.book && live.best_now.ev_pct > (live.fields.ev_pct ?? 0) + 0.5 && (
+                  <div className="text-mm-text-dim mt-0.5">Better price now: {bookLabel(live.best_now.book)} {fmtOdds(live.best_now.odds)} ({live.best_now.ev_pct >= 0 ? "+" : ""}{live.best_now.ev_pct.toFixed(1)}%)</div>
+                )}
+              </>
+            ) : (
+              <div className={live.status === "error" || live.status === "limited" ? "text-mm-danger" : "text-mm-text-dim"}>{live.message || "Couldn't refresh this bet."}</div>
+            )}
+          </div>
+        )}
 
         {logging && !logged && <LogForm p={p} onDone={(ok) => { setLogging(false); if (ok) setLogged(true); }} />}
 
