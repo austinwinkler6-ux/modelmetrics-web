@@ -149,6 +149,15 @@ function LogForm({ p, onDone }: { p: Pick; onDone: (logged: boolean) => void }) 
 }
 
 // ───────────────────────── card ─────────────────────────
+const CONF_DOT: Record<string, string> = { high: "bg-mm-success", medium: "bg-mm-accent", low: "bg-mm-text-faint" };
+
+function ago(mins: number | null): string {
+  if (mins == null) return "recently";
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  return `${Math.floor(mins / 60)}h ago`;
+}
+
 function EvCard({ p: base }: { p: Pick }) {
   const { session } = useAuth();
   const [live, setLive] = useState<Refresh | null>(null);
@@ -172,67 +181,84 @@ function EvCard({ p: base }: { p: Pick }) {
   const [logging, setLogging] = useState(false);
   const [logged, setLogged] = useState(false);
   const isNew = p.first_seen ? Date.now() - new Date(p.first_seen).getTime() < 10 * 60 * 1000 : false;
-  const label = `${p.pick} ${marketLabel(p.market, p.sport)}`;
+  const isUnder = p.side === "Under" || p.side === "No";
+  const btn = "text-xs px-2.5 py-1 rounded-md border border-mm-border text-mm-text-dim hover:border-mm-accent hover:text-mm-accent transition-colors disabled:opacity-50";
 
   return (
     <div className="rounded-2xl bg-mm-panel border border-mm-border mb-3 overflow-hidden flex">
       <div className="w-1.5 shrink-0" style={{ background: evColor(p.ev_pct), opacity: p.confidence === "low" ? 0.5 : 1 }} />
       <div className="flex-1 p-4 min-w-0">
-        <div className="flex justify-between gap-3">
+
+        {/* who / what / when  +  edge */}
+        <div className="flex justify-between gap-4">
           <div className="min-w-0">
-            <div className="font-display text-[15px] font-semibold text-mm-text truncate">{p.player}</div>
-            <div className="font-mono text-xs text-mm-text-dim">{label}</div>
-            <div className="font-mono text-[11px] text-mm-text-faint mt-0.5">
-              {SPORT_LABELS[p.sport] || p.sport} · {p.event} · {fmtStart(p.commence, p.minutes_to_start)}
+            <div className="flex items-center gap-2">
+              <div className="font-display text-base font-semibold text-mm-text truncate">{p.player}</div>
+              {isNew && <span className="shrink-0 font-mono text-[9px] px-1.5 py-0.5 rounded bg-mm-accent/15 text-mm-accent uppercase tracking-wide">New</span>}
             </div>
+            <div className="text-sm text-mm-text mt-0.5">{p.pick} <span className="text-mm-text-dim">{marketLabel(p.market, p.sport)}</span></div>
+            <div className="text-[11px] text-mm-text-faint mt-1">{SPORT_LABELS[p.sport] || p.sport} · {p.event}</div>
+            <div className="text-[11px] text-mm-text-dim">{fmtStart(p.commence, p.minutes_to_start)}</div>
           </div>
           <div className="text-right shrink-0">
-            <div className="font-mono text-2xl font-bold mm-tabular" style={{ color: evColor(p.ev_pct) }}>{p.ev_pct >= 0 ? "+" : ""}{p.ev_pct.toFixed(1)}%</div>
-            <div className="font-mono text-[10px] text-mm-text-faint uppercase tracking-wide">EV</div>
+            <div className="font-mono text-2xl font-bold mm-tabular leading-none" style={{ color: evColor(p.ev_pct) }}>{p.ev_pct >= 0 ? "+" : ""}{p.ev_pct.toFixed(1)}%</div>
+            <div className="text-[10px] text-mm-text-faint uppercase tracking-wide mt-1">Edge</div>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-3">
-          <div>
-            <div className="font-mono text-[10px] text-mm-text-faint uppercase tracking-wide">Bet at</div>
-            <div className="font-mono text-sm text-mm-text mm-tabular"><span className="font-semibold">{bookLabel(p.book)}</span> {fmtOdds(p.odds)}</div>
+        {/* the two numbers that matter */}
+        <div className="grid grid-cols-2 gap-px mt-3 rounded-lg overflow-hidden bg-mm-border">
+          <div className="bg-mm-panel-2 px-3 py-2">
+            <div className="text-[10px] text-mm-text-faint uppercase tracking-wide">Bet at</div>
+            <div className="flex items-baseline gap-2 mt-0.5">
+              <span className="text-sm text-mm-text font-semibold truncate">{bookLabel(p.book)}</span>
+              <span className="font-mono text-lg font-bold text-mm-text mm-tabular">{fmtOdds(p.odds)}</span>
+            </div>
           </div>
-          <div>
-            <div className="font-mono text-[10px] text-mm-text-faint uppercase tracking-wide">Fair price</div>
-            <div className="font-mono text-sm text-mm-text-dim mm-tabular">{fmtOdds(p.fair_odds)} <span className="text-mm-text-faint">({(p.fair_prob * 100).toFixed(1)}%)</span></div>
+          <div className="bg-mm-panel-2 px-3 py-2">
+            <div className="text-[10px] text-mm-text-faint uppercase tracking-wide">Fair price</div>
+            <div className="flex items-baseline gap-2 mt-0.5">
+              <span className="font-mono text-lg font-bold text-mm-text-dim mm-tabular">{fmtOdds(p.fair_odds)}</span>
+              <span className="font-mono text-xs text-mm-text-faint mm-tabular">{(p.fair_prob * 100).toFixed(1)}%</span>
+            </div>
           </div>
-          <span className={`font-mono text-[10px] px-2 py-0.5 rounded-full border ${CONF_STYLE[p.confidence]}`}>{CONF_LABEL[p.confidence]}</span>
-          {isNew && <span className="font-mono text-[10px] px-2 py-0.5 rounded-full border border-mm-accent/30 bg-mm-accent/15 text-mm-accent">New</span>}
-          <div className="ml-auto flex items-center gap-2">
-            {logged ? <span className="text-xs font-mono text-mm-success">✓ Logged</span> : (
-              <button onClick={() => setLogging(!logging)}
-                className="text-xs font-mono px-2 py-1 rounded-md border border-mm-border text-mm-text-dim hover:border-mm-accent hover:text-mm-accent">📝 Log</button>
+        </div>
+
+        {/* status + actions */}
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 mt-3">
+          <div className="flex items-center gap-1.5 text-[11px] text-mm-text-faint">
+            <span className={`w-1.5 h-1.5 rounded-full ${CONF_DOT[p.confidence]}`} />
+            <span>{CONF_LABEL[p.confidence]}</span>
+            <span>· {ago(p.age_minutes)}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={refreshPrice} disabled={refreshing} className={btn}>{refreshing ? "Checking…" : "⟳ Refresh"}</button>
+            {logged ? (
+              <span className="text-xs text-mm-success px-1">✓ Logged</span>
+            ) : (
+              <button onClick={() => setLogging(!logging)} className={btn}>Log bet</button>
             )}
-            <button onClick={refreshPrice} disabled={refreshing}
-              className="text-xs font-mono px-2 py-1 rounded-md border border-mm-border text-mm-text-dim hover:border-mm-accent hover:text-mm-accent disabled:opacity-50">
-              {refreshing ? "Checking…" : "⟳ Refresh"}
-            </button>
-            <button onClick={() => setOpen(!open)} className="text-xs font-mono text-mm-accent hover:underline">{open ? "Less" : "Details"}</button>
+            <button onClick={() => setOpen(!open)} className="text-xs text-mm-accent hover:underline px-1">{open ? "Hide ▴" : "All books ▾"}</button>
           </div>
         </div>
 
+        {/* result of the Refresh button */}
         {live && (
-          <div className="mt-3 rounded-lg border border-mm-border bg-mm-panel-2 px-3 py-2 text-xs font-mono">
+          <div className="mt-3 rounded-lg border border-mm-border bg-mm-panel-2 px-3 py-2 text-xs">
             {live.status === "ok" && live.before && live.fields ? (
-              <>
-                <div className="text-mm-text-dim">
-                  Just checked: {bookLabel(base.book)} {fmtOdds(live.before.odds)} → <span className="text-mm-text font-semibold">{fmtOdds(live.fields.odds ?? live.before.odds)}</span>
-                  {" · "}EV {live.before.ev_pct.toFixed(1)}% → <span className="text-mm-text font-semibold">{(live.fields.ev_pct ?? 0).toFixed(1)}%</span>
-                </div>
-                {live.still_plus_ev ? (
-                  <div className="text-mm-success mt-0.5">Still +EV at this price.</div>
-                ) : (
-                  <div className="text-mm-danger mt-0.5">No longer +EV at this price. Don&apos;t bet it.</div>
-                )}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className={live.still_plus_ev ? "text-mm-success font-semibold" : "text-mm-danger font-semibold"}>
+                  {live.still_plus_ev ? "Still +EV" : "No longer +EV, skip it"}
+                </span>
+                <span className="font-mono text-mm-text-dim mm-tabular">
+                  {fmtOdds(live.before.odds)} → <span className="text-mm-text">{fmtOdds(live.fields.odds ?? live.before.odds)}</span>
+                  {"  ·  "}{live.before.ev_pct.toFixed(1)}% → <span className="text-mm-text">{(live.fields.ev_pct ?? 0).toFixed(1)}%</span>
+                </span>
+                <span className="text-mm-text-faint">checked just now</span>
                 {live.best_now && live.best_now.book !== base.book && live.best_now.ev_pct > (live.fields.ev_pct ?? 0) + 0.5 && (
-                  <div className="text-mm-text-dim mt-0.5">Better price now: {bookLabel(live.best_now.book)} {fmtOdds(live.best_now.odds)} ({live.best_now.ev_pct >= 0 ? "+" : ""}{live.best_now.ev_pct.toFixed(1)}%)</div>
+                  <span className="basis-full text-mm-text-dim">Better price now: {bookLabel(live.best_now.book)} {fmtOdds(live.best_now.odds)} ({live.best_now.ev_pct >= 0 ? "+" : ""}{live.best_now.ev_pct.toFixed(1)}%)</span>
                 )}
-              </>
+              </div>
             ) : (
               <div className={live.status === "error" || live.status === "limited" ? "text-mm-danger" : "text-mm-text-dim"}>{live.message || "Couldn't refresh this bet."}</div>
             )}
@@ -241,50 +267,51 @@ function EvCard({ p: base }: { p: Pick }) {
 
         {logging && !logged && <LogForm p={p} onDone={(ok) => { setLogging(false); if (ok) setLogged(true); }} />}
 
+        {/* every book, one table */}
         {open && (
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
-            <div>
-              <div className="text-mm-text-faint uppercase tracking-wide text-[10px] mb-1">Sharp fair price ({p.sharp_spread_pts.toFixed(1)} pt spread)</div>
-              {Object.entries(p.sharps).map(([b, v]) => (
-                <div key={b} className="flex justify-between border-b border-mm-border/50 py-0.5 text-mm-text-dim">
-                  <span>{bookLabel(b)}</span><span className="mm-tabular">{(((p.side === "Under" || p.side === "No") ? 1 - v : v) * 100).toFixed(1)}%</span>
-                </div>
-              ))}
-              <div className="text-[11px] text-mm-text-faint mt-1">
-                Each sharp quote has its vig removed, then they are averaged (Pinnacle counts most). {p.single_source && "Only one non-Pinnacle sharp is posting this, so treat it with extra caution."}
-              </div>
-            </div>
-            <div>
-              <div className="text-mm-text-faint uppercase tracking-wide text-[10px] mb-1">Every book, best price first</div>
-              {p.shop.length === 0 && <div className="text-mm-text-faint">No other book posts this line.</div>}
-              {p.shop.length > 0 && (
-                <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 items-center">
-                  <div className="text-[10px] text-mm-text-faint uppercase">Book</div>
-                  <div className="text-[10px] text-mm-text-faint uppercase text-right">{p.side}</div>
-                  <div className="text-[10px] text-mm-text-faint uppercase text-right">{OPPOSITE[p.side] || "Other side"}</div>
-                  <div className="text-[10px] text-mm-text-faint uppercase text-right">EV</div>
-                  {p.shop.map((s) => {
-                    const mine = s.book === p.book;
-                    const row = mine ? "text-mm-accent font-semibold" : "text-mm-text-dim";
-                    return (
-                      <div key={s.book} className="contents">
-                        <div className={`border-b border-mm-border/50 py-0.5 ${row}`}>
-                          {bookLabel(s.book)}
-                          {s.sharp && <span className="ml-1.5 text-[9px] px-1 rounded border border-mm-border text-mm-text-faint">SHARP</span>}
-                          {s.ref && <span className="ml-1.5 text-[9px] px-1 rounded border border-mm-border text-mm-text-faint" title="Also helps set the fair price">REF</span>}
-                          {mine && <span className="ml-1.5 text-[9px] text-mm-accent">← bet</span>}
-                        </div>
-                        <div className={`border-b border-mm-border/50 py-0.5 text-right mm-tabular ${row}`}>{fmtOdds(s.odds)}</div>
-                        <div className={`border-b border-mm-border/50 py-0.5 text-right mm-tabular ${row}`}>{s.opp != null ? fmtOdds(s.opp) : "–"}</div>
-                        <div className={`border-b border-mm-border/50 py-0.5 text-right mm-tabular ${s.ev_pct != null && s.ev_pct >= 0 ? "text-mm-success" : "text-mm-text-faint"}`}>
-                          {s.ev_pct != null ? `${s.ev_pct >= 0 ? "+" : ""}${s.ev_pct.toFixed(1)}%` : "–"}
-                        </div>
+          <div className="mt-4 text-xs">
+            {p.shop.length === 0 ? (
+              <div className="text-mm-text-faint">No other book posts this line.</div>
+            ) : (
+              <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-5 items-center">
+                <div className="text-[10px] text-mm-text-faint uppercase tracking-wide pb-1">Book</div>
+                <div className="text-[10px] text-mm-text-faint uppercase tracking-wide pb-1 text-right">{p.side}</div>
+                <div className="text-[10px] text-mm-text-faint uppercase tracking-wide pb-1 text-right">{OPPOSITE[p.side] || "Other"}</div>
+                <div className="text-[10px] text-mm-text-faint uppercase tracking-wide pb-1 text-right">Edge</div>
+                {p.shop.map((s) => {
+                  const mine = s.book === p.book;
+                  const tone = mine ? "text-mm-accent font-semibold" : "text-mm-text-dim";
+                  const cell = "border-t border-mm-border/50 py-1.5";
+                  return (
+                    <div key={s.book} className="contents">
+                      <div className={`${cell} ${tone}`}>
+                        {bookLabel(s.book)}
+                        {s.sharp && <span className="ml-1.5 text-[9px] px-1 rounded border border-mm-border text-mm-text-faint">SHARP</span>}
+                        {s.ref && <span className="ml-1.5 text-[9px] px-1 rounded border border-mm-border text-mm-text-faint" title="Also helps set the fair price">REF</span>}
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-              <div className="text-[11px] text-mm-text-faint mt-1">Sharp books and FanDuel (REF) help set the fair price; the fair price for a FanDuel bet leaves FanDuel out. Price last seen {p.age_minutes != null ? `${p.age_minutes} min ago` : "recently"}. Check the live price before you bet.</div>
+                      <div className={`${cell} font-mono text-right mm-tabular ${tone}`}>{fmtOdds(s.odds)}</div>
+                      <div className={`${cell} font-mono text-right mm-tabular ${tone}`}>{s.opp != null ? fmtOdds(s.opp) : "–"}</div>
+                      <div className={`${cell} font-mono text-right mm-tabular ${s.ev_pct != null && s.ev_pct >= 0 ? "text-mm-success" : "text-mm-text-faint"}`}>
+                        {s.ev_pct != null ? `${s.ev_pct >= 0 ? "+" : ""}${s.ev_pct.toFixed(1)}%` : "–"}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="mt-3 pt-3 border-t border-mm-border/50 text-[11px] text-mm-text-faint leading-relaxed">
+              <div>
+                <span className="text-mm-text-dim">Fair price built from: </span>
+                {Object.entries(p.sharps).map(([b, v], i) => (
+                  <span key={b}>{i > 0 && " · "}{bookLabel(b)} {(((isUnder ? 1 - v : v)) * 100).toFixed(1)}%</span>
+                ))}
+                {" "}({p.sharp_spread_pts.toFixed(1)} pt spread between them)
+              </div>
+              <div className="mt-1">
+                Each quote has its vig removed, then they are averaged with Pinnacle and FanDuel counting most. Quarter-Kelly for this edge is {p.kelly_quarter_pct.toFixed(1)}% of your bankroll.
+                {p.single_source && " Only one non-Pinnacle sharp is posting this, so treat it with extra caution."} Check the live price before you bet.
+              </div>
             </div>
           </div>
         )}
@@ -407,7 +434,7 @@ export default function EvBoardPage() {
 
       <div className="rounded-2xl bg-mm-panel border border-mm-border p-4 mb-5 text-xs text-mm-text-dim leading-relaxed">
         Each bet is a price at a softer sportsbook that beats the <span className="text-mm-text font-semibold">fair price</span> set by the sharpest books
-        (Pinnacle, BetOnline, Novig, ProphetX, Polymarket) after their vig is removed. There are no projections here: the sharp market is the benchmark.
+        (Pinnacle, FanDuel, BetOnline, Novig, ProphetX, Polymarket) after their vig is removed. There are no projections here: the sharp market is the benchmark.
         Edges are small and disappear quickly, so check the live price before you bet.
         <button onClick={loadPerf} className="ml-2 text-mm-accent hover:underline">{showPerf ? "Hide track record" : "Does this work? See the track record"}</button>
         {showPerf && (
