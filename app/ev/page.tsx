@@ -9,7 +9,7 @@ import { useAuth } from "@/lib/AuthContext";
 import LoginForm from "@/components/LoginForm";
 import { easternDateStr } from "@/lib/dateUtils";
 
-type Shop = { book: string; odds: number; ev_pct: number | null; sharp?: boolean; opp?: number | null };
+type Shop = { book: string; odds: number; ev_pct: number | null; sharp?: boolean; ref?: boolean; opp?: number | null };
 type Pick = {
   id: string; sport: string; event_id: string; event: string; commence: string; market: string; player: string;
   point: number | null; side: string; pick: string; book: string; odds: number; fair_prob: number; fair_odds: number;
@@ -220,6 +220,7 @@ function EvCard({ p }: { p: Pick }) {
                         <div className={`border-b border-mm-border/50 py-0.5 ${row}`}>
                           {bookLabel(s.book)}
                           {s.sharp && <span className="ml-1.5 text-[9px] px-1 rounded border border-mm-border text-mm-text-faint">SHARP</span>}
+                          {s.ref && <span className="ml-1.5 text-[9px] px-1 rounded border border-mm-border text-mm-text-faint" title="Also helps set the fair price">REF</span>}
                           {mine && <span className="ml-1.5 text-[9px] text-mm-accent">← bet</span>}
                         </div>
                         <div className={`border-b border-mm-border/50 py-0.5 text-right mm-tabular ${row}`}>{fmtOdds(s.odds)}</div>
@@ -232,7 +233,7 @@ function EvCard({ p }: { p: Pick }) {
                   })}
                 </div>
               )}
-              <div className="text-[11px] text-mm-text-faint mt-1">Sharp books set the fair price; soft books are where you bet. Price last seen {p.age_minutes != null ? `${p.age_minutes} min ago` : "recently"}. Check the live price before you bet.</div>
+              <div className="text-[11px] text-mm-text-faint mt-1">Sharp books and FanDuel (REF) help set the fair price; the fair price for a FanDuel bet leaves FanDuel out. Price last seen {p.age_minutes != null ? `${p.age_minutes} min ago` : "recently"}. Check the live price before you bet.</div>
             </div>
           </div>
         )}
