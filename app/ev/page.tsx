@@ -2,7 +2,7 @@
 
 // +EV Board -> app/ev/page.tsx
 // Reads /api/ev-picks (and /api/ev-performance). Every row is a price at a soft book that beats the fair price
-// built from the sharp books (Pinnacle, BetOnline, Novig, ProphetX, Polymarket). No projections or models.
+// built from the sharp books (Pinnacle, BetOnline). No projections or models.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/AuthContext";
@@ -434,7 +434,7 @@ export default function EvBoardPage() {
 
       <div className="rounded-2xl bg-mm-panel border border-mm-border p-4 mb-5 text-xs text-mm-text-dim leading-relaxed">
         Each bet is a price at a softer sportsbook that beats the <span className="text-mm-text font-semibold">fair price</span> set by the sharpest books
-        (Pinnacle, FanDuel, BetOnline, Novig, ProphetX, Polymarket) after their vig is removed. There are no projections here: the sharp market is the benchmark.
+        (Pinnacle, FanDuel, BetOnline) after their vig is removed. There are no projections here: the sharp market is the benchmark.
         Edges are small and disappear quickly, so check the live price before you bet.
         <button onClick={loadPerf} className="ml-2 text-mm-accent hover:underline">{showPerf ? "Hide track record" : "Does this work? See the track record"}</button>
         {showPerf && (
