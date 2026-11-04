@@ -125,7 +125,7 @@ function Coverage() {
     { name: "NBA", detail: "Points, rebounds, assists, threes, PRA, PR, PA, RA", emoji: "🏀" },
     { name: "MLB", detail: "Pitcher and batter props", emoji: "⚾" },
   ];
-  const sharps = ["Pinnacle", "BetOnline", "Novig", "ProphetX", "Polymarket"];
+  const sharps = ["Pinnacle", "FanDuel", "BetOnline"];
   const softs = ["BetMGM", "Caesars", "DraftKings", "FanDuel", "Fanatics", "Fliff", "Courtside", "Rebet", "theScore Bet"];
 
   return (
